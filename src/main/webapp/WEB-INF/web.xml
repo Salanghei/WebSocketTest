@@ -8,7 +8,7 @@
 
   <context-param>
     <param-name>contextConfigLocation</param-name>
-    <param-value>classpath:spring.xml</param-value>
+    <param-value>classpath:spring-mvc.xml</param-value>
   </context-param>
 
   <listener>
@@ -30,7 +30,16 @@
     <url-pattern>/</url-pattern>
   </servlet-mapping>
 
+  <filter>
+    <filter-name>httpPutFormContentFilter</filter-name>
+    <filter-class>org.springframework.web.filter.HttpPutFormContentFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>httpPutFormContentFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
   <welcome-file-list>
-    <welcome-file>jsp/index.jsp</welcome-file>
+    <welcome-file>view/login.html</welcome-file>
   </welcome-file-list>
 </web-app>
