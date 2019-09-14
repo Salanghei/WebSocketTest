@@ -1,10 +1,12 @@
 package cn.edu.hit.ices.yang.websocket;
 
+import com.alibaba.fastjson.JSON;
+import net.sf.json.JSONObject;
 import org.springframework.web.socket.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * 建立处理器来处理连接之后的事情，用来处理消息的接收和发送
@@ -30,8 +32,35 @@ public class MyWebSocketHandler implements WebSocketHandler {
     @Override
     public void handleMessage(WebSocketSession webSocketSession, WebSocketMessage<?> webSocketMessage)
             throws Exception{
-        String username = (String) webSocketSession.getAttributes().get("WEBSOCKET_USERNAME");
-        sendMessageToUsers(new TextMessage(username + ": " + webSocketMessage.getPayload()));
+        // 解析json字符串
+        String messageStr = webSocketMessage.getPayload() + "";
+        System.out.println(messageStr);
+        if(messageStr.charAt(0) == '{' && messageStr.charAt(messageStr.length() - 1) == '}') {
+            JSONObject jsonObject = JSONObject.fromObject(messageStr);
+            String toUser = (String) jsonObject.get("to");
+            String message = (String) jsonObject.get("message");
+            System.out.println("user = " + toUser + "; message = " + message);
+
+            // 获取当前用户名
+            String username = (String) webSocketSession.getAttributes().get("WEBSOCKET_USERNAME");
+
+            // 获取当前时间
+            Date date = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+
+            Map<String, String> map = new HashMap<>();
+            map.put("username", username);
+            map.put("message", message);
+            map.put("time", dateFormat.format(date));
+            String jsonStr = JSON.toJSONString(map);
+            if (toUser.equals("")) {
+                System.out.println("Send message to group");
+                sendMessageToUsers(new TextMessage(jsonStr));
+            } else {
+                System.out.println("Send message to " + toUser);
+                sendMessageToUser(toUser, new TextMessage(jsonStr));
+            }
+        }
     }
 
     @Override
