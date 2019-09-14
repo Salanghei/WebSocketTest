@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -45,6 +46,18 @@ public class UserController {
         map.put("message", message);
         String jsonString = JSON.toJSONString(map);
         System.out.println(jsonString);
+        return jsonString;
+    }
+
+    @RequestMapping(value = "/allUsers", method = RequestMethod.GET)
+    @ResponseBody
+    public String allUsers(HttpServletRequest request){
+        Test user = (Test)request.getSession().getAttribute("user");
+        List<Test> userList = userService.getAllUsers(user.getName());
+        Map<String, Object> map = new HashMap<>();
+        map.put("userList", userList);
+        map.put("myUser", user);
+        String jsonString = JSON.toJSONString(map);
         return jsonString;
     }
 }

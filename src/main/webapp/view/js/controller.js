@@ -59,9 +59,20 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             }
         });
     }
-}).controller("testCtrl", function($scope, $cookies){
+}).controller("testCtrl", function($scope, $cookies, homeService){
     // $scope.messageList = [];
-    $scope.messageToSend = "";
+    $scope.messageToSend = "";    // 要发送的信息
+    $scope.userList = [];         // 所有用户列表
+    $scope.myUser = {};           // 当前用户
+
+    var params = [];
+
+    homeService.getAllUsers(params, function(userList, myUser){
+        //console.log(userList);
+        //console.log(myUser);
+        $scope.userList = userList;
+        $scope.myUser = myUser;
+    });
 
     var websocket;
     if ('WebSocket' in window) {
@@ -77,9 +88,9 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     };
     websocket.onmessage = function(event) {
         var message = jQuery.parseJSON(event.data);
-        var username = $cookies.get("username");
+        console.log(message);
         var html = "";
-        if(message.username === username){
+        if(message.username === $scope.myUser.name){
             // var messageCell = {
             //     "user": true,
             //     "other": false,
@@ -88,7 +99,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             // $scope.messageList.push(messageCell);
             html = "<div class=\"chat-me\">\n" +
                 "    <div class=\"media-left\">\n" +
-                "        <img src=\"../img/profile-photos/1.png\" class=\"img-circle img-sm\" alt=\"Profile Picture\">\n" +
+                "        <img src=\"../img/profile-photos/" + $scope.myUser.id + ".png\" class=\"img-circle img-sm\" alt=\"Profile Picture\">\n" +
                 "    </div>\n" +
                 "    <div class=\"media-body\">\n" +
                 "        <div>\n" +

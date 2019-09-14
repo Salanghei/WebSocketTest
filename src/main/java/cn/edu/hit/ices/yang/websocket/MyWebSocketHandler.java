@@ -23,8 +23,8 @@ public class MyWebSocketHandler implements WebSocketHandler {
         String userName = (String)session.getAttributes().get("WEBSOCKET_USERNAME");
         if(userName != null){
             // 查询未读消息
-            int count = 5;
-            session.sendMessage(new TextMessage(String.valueOf(count)));
+//            int count = 5;
+//            session.sendMessage(new TextMessage(String.valueOf(count)));
         }
     }
 

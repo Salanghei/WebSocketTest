@@ -4,4 +4,8 @@
     <select id="selectUserByUserName" parameterType="java.lang.String" resultType="cn.edu.hit.ices.yang.model.Test">
         select * from test where name=#{name};
     </select>
+
+    <select id="selectAllUsers" parameterType="java.lang.String" resultType="cn.edu.hit.ices.yang.model.Test">
+        select * from test where name!=#{name};
+    </select>
 </mapper>
