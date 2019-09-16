@@ -43,13 +43,15 @@ public class MyWebSocketHandler implements WebSocketHandler {
 
             // 获取当前用户名
             String username = (String) webSocketSession.getAttributes().get("WEBSOCKET_USERNAME");
-
+            // 获取当前用户id
+            String userid = (String) webSocketSession.getAttributes().get("WEBSOCKET_USERID");
             // 获取当前时间
             Date date = new Date();
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
             Map<String, String> map = new HashMap<>();
             map.put("username", username);
+            map.put("userID", userid);
             map.put("message", message);
             map.put("time", dateFormat.format(date));
             String jsonStr = JSON.toJSONString(map);
@@ -58,7 +60,7 @@ public class MyWebSocketHandler implements WebSocketHandler {
                 sendMessageToUsers(new TextMessage(jsonStr));
             } else {
                 System.out.println("Send message to " + toUser);
-                sendMessageToUser(toUser, new TextMessage(jsonStr));
+                sendMessageToUser(username, toUser, new TextMessage(jsonStr));
             }
         }
     }
@@ -102,9 +104,11 @@ public class MyWebSocketHandler implements WebSocketHandler {
     /**
      * 给某个用户发送消息
      */
-    public void sendMessageToUser(String userName, TextMessage message){
+    public void sendMessageToUser(String fromUser, String toUser, TextMessage message){
         for(WebSocketSession user : users){
-            if(user.getAttributes().get("WEBSOCKET_USERNAME").equals(userName)){
+            // 发消息用户和接收消息用户都显示消息内容
+            if(user.getAttributes().get("WEBSOCKET_USERNAME").equals(toUser) ||
+                    user.getAttributes().get("WEBSOCKET_USERNAME").equals(fromUser)){
                 try {
                     if(user.isOpen()){
                         user.sendMessage(message);

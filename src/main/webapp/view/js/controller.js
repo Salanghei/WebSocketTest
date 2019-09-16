@@ -2,7 +2,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     // 页面跳转
     $scope.goto = function(where){
         window.location.href = where;
-    }
+    };
 
     $scope.username = "";
     $scope.password = "";
@@ -16,7 +16,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         console.log("$scope.username", $scope.username);
         console.log("$scope.password", $scope.password);
         console.log("$scope.remember", $scope.remember);
-    }
+    };
 
     $scope.getInfo();
 
@@ -64,6 +64,12 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     $scope.messageToSend = "";    // 要发送的信息
     $scope.userList = [];         // 所有用户列表
     $scope.myUser = {};           // 当前用户
+    $scope.userChatTo = {};       // 正在对话的用户
+
+    $scope.getUserChatWindow = function(user){
+        $scope.userChatTo = user;
+        document.getElementById("chat-window").innerHTML = "";
+    };
 
     var params = [];
 
@@ -72,6 +78,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         //console.log(myUser);
         $scope.userList = userList;
         $scope.myUser = myUser;
+        $scope.userChatTo = userList[0];
     });
 
     var websocket;
@@ -99,7 +106,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             // $scope.messageList.push(messageCell);
             html = "<div class=\"chat-me\">\n" +
                 "    <div class=\"media-left\">\n" +
-                "        <img src=\"../img/profile-photos/" + $scope.myUser.id + ".png\" class=\"img-circle img-sm\" alt=\"Profile Picture\">\n" +
+                "        <img src=\"../img/profile-photos/" + message.userID + ".png\" class=\"img-circle img-sm\" alt=\"Profile Picture\">\n" +
                 "    </div>\n" +
                 "    <div class=\"media-body\">\n" +
                 "        <div>\n" +
@@ -116,7 +123,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             // $scope.messageList.push(messageCell);
             html = "<div class=\"chat-user\">\n" +
                 "    <div class=\"media-left\">\n" +
-                "        <img src=\"../img/profile-photos/8.png\" class=\"img-circle img-sm\" alt=\"Profile Picture\">\n" +
+                "        <img src=\"../img/profile-photos/" + message.userID + ".png\" class=\"img-circle img-sm\" alt=\"Profile Picture\">\n" +
                 "    </div>\n" +
                 "    <div class=\"media-body\">\n" +
                 "        <div>\n" +
@@ -137,7 +144,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     };
     websocket.onclose = function(event) {
         alert("与服务器断开了链接!")
-    }
+    };
 
     $scope.sendMessageToGroup = function(){
         if (websocket != null) {
@@ -147,11 +154,11 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         } else {
             alert('未与服务器链接.');
         }
-    }
+    };
 
-    $scope.sendMessageToUser = function(user){
+    $scope.sendMessageToUser = function(username){
         if (websocket != null) {
-            var data = "{\"to\":\"" + user + "\",\"message\":\"" + $scope.messageToSend + "\"}";
+            var data = "{\"to\":\"" + username + "\",\"message\":\"" + $scope.messageToSend + "\"}";
             websocket.send(data);
             $scope.messageToSend = "";
         } else {

@@ -24,15 +24,15 @@ public class MyHandshakeInterceptor implements HandshakeInterceptor {
             HttpServletRequest servletRequest = ((ServletServerHttpRequest)request).getServletRequest();
             Test user = (Test)servletRequest.getSession().getAttribute("user");
             String userName = user.getName();
-//            int userId = user.getId();
+            int userId = user.getId();
 
             // 存入数据，方便在handler中获取，这里只是在方便在webSocket中存储了数据，并不是在正常的httpSession中存储
             // 想要在平时使用的session中获得这里的数据，需要使用session
             // 来存储一下
             map.put("WEBSOCKET_USERNAME", userName);
-//            map.put("WEBSOCKET_USERID", String.valueOf(userId));
+            map.put("WEBSOCKET_USERID", String.valueOf(userId));
             servletRequest.getSession().setAttribute("WEBSOCKET_USERNAME", userName);
-//            servletRequest.getSession().setAttribute("WEBSOCKET_USERID", String.valueOf(userId));
+            servletRequest.getSession().setAttribute("WEBSOCKET_USERID", String.valueOf(userId));
         }
         return true;
     }
