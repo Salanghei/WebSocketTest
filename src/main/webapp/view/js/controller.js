@@ -66,8 +66,23 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     $scope.myUser = {};           // 当前用户
     $scope.userChatTo = {};       // 正在对话的用户
 
+    $scope.isUser = true;        // 是否是用户间会话
+    $scope.isGroup = false;      // 是否是群组会话
+
     $scope.getUserChatWindow = function(user){
+        $scope.isUser = true;
+        $scope.isGroup = false;
         $scope.userChatTo = user;
+        document.getElementById("chat-window").innerHTML = "";
+    };
+
+    $scope.getGroupChatWindow = function(){
+        $scope.isUser = false;
+        $scope.isGroup = true;
+        $scope.userChatTo = {
+            "id": "group",
+            "name": "Group"
+        };
         document.getElementById("chat-window").innerHTML = "";
     };
 
