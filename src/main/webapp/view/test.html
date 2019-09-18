@@ -182,7 +182,7 @@
                                 <div ng-repeat="mes in messageList track by $index">
                                     <div class="chat-user" ng-if="mes.other">
                                         <div class="media-left">
-                                            <img src="../img/profile-photos/{{ mes.otherUserId }}.png" class="img-circle img-sm" alt="Profile Picture">
+                                            <img src="../img/profile-photos/{{ mes.userId }}.png" class="img-circle img-sm" alt="Profile Picture">
                                         </div>
                                         <div class="media-body">
                                             <div>
@@ -192,7 +192,7 @@
                                     </div>
                                     <div class="chat-me" ng-if="mes.user">
                                         <div class="media-left">
-                                            <img src="../img/profile-photos/{{ mes.otherUserId }}.png" class="img-circle img-sm" alt="Profile Picture">
+                                            <img src="../img/profile-photos/{{ mes.userId }}.png" class="img-circle img-sm" alt="Profile Picture">
                                         </div>
                                         <div class="media-body">
                                             <div>
@@ -211,8 +211,8 @@
                             <span class="input-group-btn">
 					            <button class="btn btn-icon add-tooltip" data-original-title="Add file" type="button"><i class="demo-psi-paperclip icon-lg"></i></button>
 					            <button class="btn btn-icon add-tooltip" data-original-title="Emoticons" type="button"><i class="demo-pli-smile icon-lg"></i></button>
-					            <button ng-if="isGroup" ng-click="sendMessageToGroup();" class="btn btn-icon add-tooltip" data-original-title="Send" type="button" id="send" ><i class="demo-pli-paper-plane icon-lg"></i></button>
-                                <button ng-if="isUser" ng-click="sendMessageToUser(userChatTo.name);" class="btn btn-icon add-tooltip" data-original-title="Send" type="button" id="send" ><i class="demo-pli-paper-plane icon-lg"></i></button>
+					            <button ng-if="isGroup" ng-click="sendMessageToGroup();" class="btn btn-icon add-tooltip" data-original-title="Send" type="button"><i class="demo-pli-paper-plane icon-lg"></i></button>
+                                <button ng-if="isUser" ng-click="sendMessageToUser(userChatTo.name);" class="btn btn-icon add-tooltip" data-original-title="Send" type="button"><i class="demo-pli-paper-plane icon-lg"></i></button>
                             </span>
                         </div>
                     </div>

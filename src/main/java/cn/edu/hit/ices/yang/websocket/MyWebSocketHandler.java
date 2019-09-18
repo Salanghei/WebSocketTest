@@ -54,12 +54,15 @@ public class MyWebSocketHandler implements WebSocketHandler {
             map.put("userID", userid);
             map.put("message", message);
             map.put("time", dateFormat.format(date));
-            String jsonStr = JSON.toJSONString(map);
             if (toUser.equals("")) {
                 System.out.println("Send message to group");
+                map.put("toUsername", "group");
+                String jsonStr = JSON.toJSONString(map);
                 sendMessageToUsers(new TextMessage(jsonStr));
             } else {
                 System.out.println("Send message to " + toUser);
+                map.put("toUsername", toUser);
+                String jsonStr = JSON.toJSONString(map);
                 sendMessageToUser(username, toUser, new TextMessage(jsonStr));
             }
         }
