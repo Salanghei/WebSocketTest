@@ -60,7 +60,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         });
     }
 }).controller("testCtrl", function($scope, $cookies, homeService){
-    // $scope.messageList = [];
+    $scope.messageList = [];      // 消息列表
     $scope.messageToSend = "";    // 要发送的信息
     $scope.userList = [];         // 所有用户列表
     $scope.myUser = {};           // 当前用户
@@ -73,7 +73,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         $scope.isUser = true;
         $scope.isGroup = false;
         $scope.userChatTo = user;
-        document.getElementById("chat-window").innerHTML = "";
+        $scope.messageList = [];
     };
 
     $scope.getGroupChatWindow = function(){
@@ -83,7 +83,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             "id": "group",
             "name": "Group"
         };
-        document.getElementById("chat-window").innerHTML = "";
+        $scope.messageList = [];
     };
 
     var params = [];
@@ -98,7 +98,6 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
 
     var websocket;
     if ('WebSocket' in window) {
-        //var url = 'ws://' + window.location.host + '/websocket/socketServer.do';
         websocket = new WebSocket("ws://localhost:8080/websocket/socketServer.do");
     } else if ('MozWebSocket' in window) {
         websocket = new MozWebSocket("ws://websocket/socketServer.do");
@@ -111,47 +110,28 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     websocket.onmessage = function(event) {
         var message = jQuery.parseJSON(event.data);
         console.log(message);
-        var html = "";
         if(message.username === $scope.myUser.name){
-            // var messageCell = {
-            //     "user": true,
-            //     "other": false,
-            //     "details": message.message
-            // };
-            // $scope.messageList.push(messageCell);
-            html = "<div class=\"chat-me\">\n" +
-                "    <div class=\"media-left\">\n" +
-                "        <img src=\"../img/profile-photos/" + message.userID + ".png\" class=\"img-circle img-sm\" alt=\"Profile Picture\">\n" +
-                "    </div>\n" +
-                "    <div class=\"media-body\">\n" +
-                "        <div>\n" +
-                "            <p>" + message.message + "<small>" + message.time + "</small></p>\n" +
-                "         </div>\n" +
-                "    </div>\n" +
-                "</div>";
+            var messageCell = {
+                "user": true,
+                "other": false,
+                "otherUserId": message.userID,
+                "details": message.message,
+                "time": message.time
+            };
+            $scope.messageList.push(messageCell);
         }else{
-            // var messageCell = {
-            //     "user": false,
-            //     "other": true,
-            //     "details": message.message
-            // };
-            // $scope.messageList.push(messageCell);
-            html = "<div class=\"chat-user\">\n" +
-                "    <div class=\"media-left\">\n" +
-                "        <img src=\"../img/profile-photos/" + message.userID + ".png\" class=\"img-circle img-sm\" alt=\"Profile Picture\">\n" +
-                "    </div>\n" +
-                "    <div class=\"media-body\">\n" +
-                "        <div>\n" +
-                "            <p>" + message.message + "<small>" + message.time + "</small></p>\n" +
-                "        </div>\n" +
-                "    </div>\n" +
-                "</div>";
+            var messageCell = {
+                "user": false,
+                "other": true,
+                "otherUserId": message.userID,
+                "details": message.message,
+                "time": message.time
+            };
+            $scope.messageList.push(messageCell);
         }
-        var chatWindow = document.getElementById("chat-window");
-        chatWindow.innerHTML = chatWindow.innerHTML + html;
-        // $("#chat-window").html($("#chat-window").html() + html);
+        console.log($scope.messageList);
+        $scope.$apply();  // 更新数据
         //设置滚动条始终在最下方
-        // $("#scroll-window").scrollTop($("#scroll-window").scrollHeight);
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
     };

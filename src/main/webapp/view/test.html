@@ -179,28 +179,28 @@
                     <div class="nano" style="height: 65vh; background-color: #d6dbe0;">
                         <div class="nano-content" style="height: 65vh;" id="scroll-window">
                             <div class="panel-body chat-body media-block" id="chat-window">
-                                <!--<div ng-repeat="mes in messageList">-->
-                                    <!--<div class="chat-user" ng-if="mes.other">-->
-                                        <!--<div class="media-left">-->
-                                            <!--<img src="../img/profile-photos/8.png" class="img-circle img-sm" alt="Profile Picture">-->
-                                        <!--</div>-->
-                                        <!--<div class="media-body">-->
-                                            <!--<div>-->
-                                                <!--<p>{{ mes.details }}<small>09:23AM</small></p>-->
-                                            <!--</div>-->
-                                        <!--</div>-->
-                                    <!--</div>-->
-                                    <!--<div class="chat-me" ng-if="mes.user">-->
-                                        <!--<div class="media-left">-->
-                                            <!--<img src="../img/profile-photos/1.png" class="img-circle img-sm" alt="Profile Picture">-->
-                                        <!--</div>-->
-                                        <!--<div class="media-body">-->
-                                            <!--<div>-->
-                                                <!--<p>{{ mes.details }}<small>09:23AM</small></p>-->
-                                            <!--</div>-->
-                                        <!--</div>-->
-                                    <!--</div>-->
-                                <!--</div>-->
+                                <div ng-repeat="mes in messageList track by $index">
+                                    <div class="chat-user" ng-if="mes.other">
+                                        <div class="media-left">
+                                            <img src="../img/profile-photos/{{ mes.otherUserId }}.png" class="img-circle img-sm" alt="Profile Picture">
+                                        </div>
+                                        <div class="media-body">
+                                            <div>
+                                                <p>{{ mes.details }}<small>{{ mes.time }}</small></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="chat-me" ng-if="mes.user">
+                                        <div class="media-left">
+                                            <img src="../img/profile-photos/{{ mes.otherUserId }}.png" class="img-circle img-sm" alt="Profile Picture">
+                                        </div>
+                                        <div class="media-body">
+                                            <div>
+                                                <p>{{ mes.details }}<small>{{ mes.time }}</small></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <!--<div class="chat-meta-day"><span class="badge">53 Messages</span></div>-->
                             </div>
                         </div>
