@@ -50,18 +50,18 @@ public class MyWebSocketHandler implements WebSocketHandler {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
             Map<String, String> map = new HashMap<>();
-            map.put("username", username);
-            map.put("userID", userid);
-            map.put("message", message);
-            map.put("time", dateFormat.format(date));
+            map.put("username", username);                         // 发消息的用户名
+            map.put("userID", userid);                             // 发消息的用户id
+            map.put("message", message);                           // 消息内容
+            map.put("time", dateFormat.format(date));              // 发消息的时间
             if (toUser.equals("")) {
                 System.out.println("Send message to group");
-                map.put("toUsername", "group");
+                map.put("toUsername", "Group");                    // 收消息的用户名
                 String jsonStr = JSON.toJSONString(map);
                 sendMessageToUsers(new TextMessage(jsonStr));
             } else {
                 System.out.println("Send message to " + toUser);
-                map.put("toUsername", toUser);
+                map.put("toUsername", toUser);                     // 收消息的用户名
                 String jsonStr = JSON.toJSONString(map);
                 sendMessageToUser(username, toUser, new TextMessage(jsonStr));
             }
