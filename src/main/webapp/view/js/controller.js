@@ -85,9 +85,8 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     // 获取local storage中存储的用户间的通讯消息
     $scope.getUserMessageRecord = function(username){
         if(typeof(Storage) !== "undefined") {
-            var messageFromRecord = [];
             if(localStorage.getItem("messageRecord") != null){
-                messageFromRecord = JSON.parse(localStorage.getItem("messageRecord"));
+                var messageFromRecord = JSON.parse(localStorage.getItem("messageRecord"));
                 for(var i = 0; i < messageFromRecord.length; i++){
                     // 获取正在通讯的用户与当前登录用户间的消息
                     var tempMessage = messageFromRecord[i];
@@ -110,9 +109,8 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     // 获取local storage中存储的群组内的通讯消息
     $scope.getGroupMessageRecord = function(usernameList){
         if(typeof(Storage) !== "undefined") {
-            var messageFromRecord = [];
             if(localStorage.getItem("messageRecord") != null){
-                messageFromRecord = JSON.parse(localStorage.getItem("messageRecord"));
+                var messageFromRecord = JSON.parse(localStorage.getItem("messageRecord"));
                 for(var i = 0; i < messageFromRecord.length; i++){
                     // 获取群组内的消息
                     var tempMessage = messageFromRecord[i];
@@ -126,6 +124,29 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
                         $scope.messageList.push(messageFromRecord[i]);
                     }
                 }
+            }
+        } else {
+            alert("抱歉，您的浏览器不支持local storage功能，无法保存聊天记录...");
+        }
+    };
+
+    // 检查local storage中的记录是否过期
+    $scope.checkLocalStorage = function(){
+        if(typeof(localStorage) !== "undefined"){
+            if(localStorage.getItem("messageRecord") != null){
+                var messageFromRecord = JSON.parse(localStorage.getItem("messageRecord"));
+                for(var i = 0; i < messageFromRecord.length; i++){
+                    // 将time字符串转换为yyyy/MM/dd hh:mm:ss形式后，再转换为时间类型
+                    var recordDate = new Date(messageFromRecord[i]["time"].replace(/-/g, "/"));
+                    var nowDate = new Date();    // 获取当前时间
+                    var timeDiff = nowDate.getTime() - recordDate.getTime();   // 计算相差的毫秒数
+                    var dayDiff = Math.floor(timeDiff / (24 * 3600 * 1000));   // 计算相差的天数
+                    if(dayDiff <= 7){
+                        messageFromRecord = messageFromRecord.splice(i, 1);    // 获取7天内的消息记录
+                        break;
+                    }
+                }
+                localStorage.setItem("messageRecord", JSON.stringify(messageFromRecord));
             }
         } else {
             alert("抱歉，您的浏览器不支持local storage功能，无法保存聊天记录...");
