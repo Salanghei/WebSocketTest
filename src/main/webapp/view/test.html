@@ -93,12 +93,12 @@
                                     <a href="#" ng-click="getUserChatWindow(user)" class="chat-unread">
                                         <div class="media-left">
                                             <img class="img-circle img-xs" src="../img/profile-photos/{{ user.id }}.png" alt="Profile Picture">
-                                            <i class="badge badge-success badge-stat badge-icon pull-left"></i>
+                                            <!--<i class="badge badge-success badge-stat badge-icon pull-left"></i>-->
                                         </div>
                                         <div class="media-body">
                                             <span class="chat-info">
                                                 <span class="text-xs">11:39</span>
-                                                <span class="badge badge-success">9</span>
+                                                <span class="badge badge-success" ng-if="user.unRead">{{ user.mesCount }}</span>
                                             </span>
                                             <div class="chat-text">
                                                 <p class="chat-username">{{ user.name }}</p>
@@ -111,19 +111,19 @@
                                 <div style="margin: 20px;">
                                     <p>群组列表</p>
                                 </div>
-                                <div style="margin: 20px;">
-                                    <a href="#" ng-click="getGroupChatWindow()" class="chat-unread">
+                                <div ng-repeat="group in groupList" style="margin: 20px;">
+                                    <a href="#" ng-click="getGroupChatWindow(group)" class="chat-unread">
                                         <div class="media-left">
-                                            <img class="img-circle img-xs" src="../img/profile-photos/group.png" alt="Profile Picture">
-                                            <i class="badge badge-success badge-stat badge-icon pull-left"></i>
+                                            <img class="img-circle img-xs" src="../img/profile-photos/{{ group.id }}.png" alt="Profile Picture">
+                                            <!--<i class="badge badge-success badge-stat badge-icon pull-left"></i>-->
                                         </div>
                                         <div class="media-body">
                                             <span class="chat-info">
                                                 <span class="text-xs">11:39</span>
-                                                <!--<span class="badge badge-success">9</span>-->
+                                                <span class="badge badge-success" ng-if="group.unRead">{{ group.mesCount }}</span>
                                             </span>
                                             <div class="chat-text">
-                                                <p class="chat-username">Group</p>
+                                                <p class="chat-username">{{ group.name }}</p>
                                                 <p>I will give you a complete account of the system.</p>
                                             </div>
                                         </div>
@@ -204,7 +204,7 @@
                             <span class="input-group-btn">
 					            <button class="btn btn-icon add-tooltip" data-original-title="Add file" type="button"><i class="demo-psi-paperclip icon-lg"></i></button>
 					            <button class="btn btn-icon add-tooltip" data-original-title="Emoticons" type="button"><i class="demo-pli-smile icon-lg"></i></button>
-					            <button ng-if="isGroup" ng-click="sendMessageToGroup();" class="btn btn-icon add-tooltip" data-original-title="Send" type="button"><i class="demo-pli-paper-plane icon-lg"></i></button>
+					            <button ng-if="isGroup" ng-click="sendMessageToGroup(userChatTo.name);" class="btn btn-icon add-tooltip" data-original-title="Send" type="button"><i class="demo-pli-paper-plane icon-lg"></i></button>
                                 <button ng-if="isUser" ng-click="sendMessageToUser(userChatTo.name);" class="btn btn-icon add-tooltip" data-original-title="Send" type="button"><i class="demo-pli-paper-plane icon-lg"></i></button>
                             </span>
                         </div>

@@ -61,21 +61,29 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
 }).controller("testCtrl", function($scope, $cookies, homeService){
     $scope.messageList = [];      // 当前消息列表
     $scope.messageToSend = "";    // 要发送的信息
+
     $scope.userList = [];         // 所有用户列表
+    $scope.groupList = [{"id": "group", "name": "Group1", "mesCount": 0, "unRead": false},
+        {"id": "group", "name": "Group2", "mesCount": 0, "unRead": false}];
+                                  // 所有群组列表
+
     $scope.myUser = {};           // 当前用户
     $scope.userChatTo = {};       // 正在对话的用户
 
     $scope.isUser = true;        // 是否是用户间会话
     $scope.isGroup = false;      // 是否是群组会话
 
-    var dateStr;    // 记录当日日期
+    var dateStr;                 // 记录当日日期
+    var params = [];             // 调用service服务时的参数
+    var usernameList = [];       // 用户名列表
+    var groupnameList = [];      // 群组名列表
 
     // 在local storage中存储通讯消息
     $scope.setMessageRecord = function(data){
         if(typeof(Storage) !== undefined) {
             var key = $scope.userChatTo.name;
-            if(data["toUsername"] === "Group"){    // 如果是群聊则键值变为Group
-                key = "Group";
+            if(groupnameList.indexOf(data["toUsername"]) > -1){    // 如果是群聊则键值变为群组名
+                key = data["toUsername"];
             }else if(data["username"] !== $scope.userChatTo.name && data["username"] !== $scope.myUser.name){
                 // 当前聊天窗口中的用户，与收到的消息来源用户不同时，也与当前登录用户不同时
                 // 即既不是我发的消息，也不是对方发的消息，是其他人给我的消息
@@ -127,8 +135,11 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         $scope.isUser = true;
         $scope.isGroup = false;
         $scope.userChatTo = user;
-        console.log("$scope.userChatTo");
-        console.log($scope.userChatTo);
+
+        var index = usernameList.indexOf($scope.userChatTo.name);
+        $scope.userList[index]["unRead"] = false;               // 未读消息提示
+        $scope.userList[index]["mesCount"] = 0;                  // 未读消息条数
+
         $scope.messageList = [];
         $scope.getMessageRecord($scope.userChatTo.name);              // 获取当前窗口的消息记录
         //设置滚动条始终在最下方
@@ -137,25 +148,23 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     };
 
     // 获取群组的通讯窗口
-    $scope.getGroupChatWindow = function(){
+    $scope.getGroupChatWindow = function(group){
         $scope.isUser = false;
         $scope.isGroup = true;
-        $scope.userChatTo = {
-            "id": "group",
-            "name": "Group"
-        };
-        console.log("$scope.userChatTo");
-        console.log($scope.userChatTo);
+        $scope.userChatTo = group;
+
+        var index = groupnameList.indexOf($scope.userChatTo.name);
+        $scope.groupList[index]["unRead"] = false;               // 未读消息提示
+        $scope.groupList[index]["mesCount"] = 0;                  // 未读消息条数
+
         $scope.messageList = [];
-        $scope.getMessageRecord("Group");              // 获取当前窗口的消息记录
+        $scope.getMessageRecord($scope.userChatTo.name);              // 获取当前窗口的消息记录
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
     };
 
-    var params = [];
-
-    // 获取所有用户信息
+    // 获取页面中所有信息
     homeService.getAllUsers(params, function(userList, myUser){
         $scope.userList = userList;
         $scope.myUser = myUser;
@@ -184,16 +193,23 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         localStorage.setItem("dateList", JSON.stringify(dateList));
 
         // 获取已经存储在local storage中的消息记录
-        if(userList.length > 0){
-            $scope.userChatTo = userList[0];
+        if($scope.userList.length > 0){
+            $scope.userChatTo = $scope.userList[0];
             $scope.getMessageRecord($scope.userChatTo.name);
-        }else{
-            $scope.userChatTo = {
-                "id": "group",
-                "name": "Group"
-            };
-            $scope.getMessageRecord("Group");
+        }else if($scope.groupList.length > 0){
+            $scope.userChatTo = $scope.groupList[0];
+            $scope.getMessageRecord($scope.userChatTo.name);
         }
+
+        // 获取所有用户名的列表
+        for(var i = 0; i < userList.length; i++){
+            usernameList.push(userList[i]["name"]);
+        }
+        // 获取所有群组名的列表
+        for(var j = 0; j < $scope.groupList.length; j++){
+            groupnameList.push($scope.groupList[j]["name"]);
+        }
+
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
@@ -227,8 +243,9 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             messageCell["other"] = false;
             messageCell["isTime"] = false;
             $scope.messageList.push(messageCell);
-        }else if((message.username === $scope.userChatTo.name && message.toUsername !== "Group")
-            || (message.toUsername === "Group" && $scope.userChatTo.name === "Group")){  // 是否是当前正在通讯的用户，或正在群聊的用户
+        }else if((message.username === $scope.userChatTo.name && groupnameList.indexOf(message.toUsername) < 0)
+            || (message.toUsername === $scope.userChatTo.name && groupnameList.indexOf(message.toUsername) > -1)){
+            // 是否是当前正在通讯的用户，或正在群聊的用户
             messageCell["user"] = false;
             messageCell["other"] = true;
             messageCell["isTime"] = false;
@@ -237,6 +254,16 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             messageCell["user"] = false;
             messageCell["other"] = true;
             messageCell["isTime"] = false;
+            var index;
+            if(message.toUsername === $scope.myUser.name) {            // 判断是否是发给当前登录用户的（可能是群消息）
+                index = usernameList.indexOf(message.username);        // 查找用户在$scope.userList中的索引
+                $scope.userList[index]["unRead"] = true;               // 未读消息提示
+                $scope.userList[index]["mesCount"] += 1;               // 未读消息条数
+            }else{                                                     // 发到群组的消息
+                index = groupnameList.indexOf(message.toUsername);      // 查找群组在$scope.groupList中的索引
+                $scope.groupList[index]["unRead"] = true;              // 未读消息提示
+                $scope.groupList[index]["mesCount"] += 1;               // 未读消息条数
+            }
         }
         console.log($scope.messageList);
         $scope.$apply();  // 更新数据
@@ -248,13 +275,13 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     websocket.onerror = function(event) {
     };
     websocket.onclose = function() {
-        alert("与服务器断开了链接!")
+        alert("与服务器断开了链接!");
     };
 
     // 群组内通讯
-    $scope.sendMessageToGroup = function(){
+    $scope.sendMessageToGroup = function(groupname){
         if (websocket != null) {
-            var data = "{\"to\":\"\",\"message\":\"" + $scope.messageToSend + "\"}";
+            var data = "{\"to\":\"" + groupname + "\", \"flag\":\"0\", \"message\":\"" + $scope.messageToSend + "\"}";
             websocket.send(data);
             $scope.messageToSend = "";
         } else {
@@ -265,7 +292,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     // 用户间通讯
     $scope.sendMessageToUser = function(username){
         if (websocket != null) {
-            var data = "{\"to\":\"" + username + "\",\"message\":\"" + $scope.messageToSend + "\"}";
+            var data = "{\"to\":\"" + username + "\", \"flag\":\"1\", \"message\":\"" + $scope.messageToSend + "\"}";
             websocket.send(data);
             $scope.messageToSend = "";
         } else {

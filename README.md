@@ -15,6 +15,7 @@ springMVC+websocket 简单的即时通讯小Demo
    - 解决同一浏览器登录不同用户时，消息的左右显示发生混乱的问题
    - 在local storage中添加时间限制
    - 优化local storage中的消息存储结构
+   - 添加消息提示、未读消息功能
 
 ### 准备
 运行前，请先向数据库中导入.sql文件，同时修改/src/main/resources/jdbc.properties文件中数据库的用户名和密码

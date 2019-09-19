@@ -38,6 +38,7 @@ public class MyWebSocketHandler implements WebSocketHandler {
         if(messageStr.charAt(0) == '{' && messageStr.charAt(messageStr.length() - 1) == '}') {
             JSONObject jsonObject = JSONObject.fromObject(messageStr);
             String toUser = (String) jsonObject.get("to");
+            String flag = (String) jsonObject.get("flag");
             String message = (String) jsonObject.get("message");
             System.out.println("user = " + toUser + "; message = " + message);
 
@@ -54,15 +55,12 @@ public class MyWebSocketHandler implements WebSocketHandler {
             map.put("userID", userid);                             // 发消息的用户id
             map.put("message", message);                           // 消息内容
             map.put("time", dateFormat.format(date));              // 发消息的时间
-            if (toUser.equals("")) {
-                System.out.println("Send message to group");
-                map.put("toUsername", "Group");                    // 收消息的用户名
-                String jsonStr = JSON.toJSONString(map);
+            map.put("toUsername", toUser);                     // 收消息的用户名
+            String jsonStr = JSON.toJSONString(map);
+            System.out.println("Send message to " + toUser);
+            if (flag.equals("0")) {
                 sendMessageToUsers(new TextMessage(jsonStr));
             } else {
-                System.out.println("Send message to " + toUser);
-                map.put("toUsername", toUser);                     // 收消息的用户名
-                String jsonStr = JSON.toJSONString(map);
                 sendMessageToUser(username, toUser, new TextMessage(jsonStr));
             }
         }
