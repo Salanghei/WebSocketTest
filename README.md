@@ -11,6 +11,10 @@ springMVC+websocket 简单的即时通讯小Demo
    - 将聊天记录临时存储在local storage中，解决在当前聊天窗口会接收到其他用户消息的问题
    - 完成群组的聊天记录的保存
    - 新问题：同一浏览器登录不同用户时，消息的左右显示发生混乱
+- 2019-9-19：
+   - 解决同一浏览器登录不同用户时，消息的左右显示发生混乱的问题
+   - 在local storage中添加时间限制
+   - 优化local storage中的消息存储结构
 
 ### 准备
 运行前，请先向数据库中导入.sql文件，同时修改/src/main/resources/jdbc.properties文件中数据库的用户名和密码
