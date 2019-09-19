@@ -76,6 +76,10 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             var key = $scope.userChatTo.name;
             if(data["toUsername"] === "Group"){    // 如果是群聊则键值变为Group
                 key = "Group";
+            }else if(data["username"] !== $scope.userChatTo.name && data["username"] !== $scope.myUser.name){
+                // 当前聊天窗口中的用户，与收到的消息来源用户不同时，也与当前登录用户不同时
+                // 即既不是我发的消息，也不是对方发的消息，是其他人给我的消息
+                key = data["username"];
             }
             var messageToRecord = {};
             messageToRecord[key] = [];
