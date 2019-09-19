@@ -82,20 +82,22 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         }
     };
 
-    // 获取local storage中存储的通讯消息
-    // chatWindowOwner表示当前聊天窗口的所有者：
-    //     当是用户间的通讯时，该值为当前登录用户；当是群聊时，该值为"group"
-    // usernameList表示与当前聊天窗口的所有者通讯的用户列表：
-    //     当是用户间的通讯时，该列表仅包含单个用户；当是群聊时，该列表包含群组中的所有用户
-    $scope.getMessageRecord = function(usernameList, chatWindowOwner){
+    // 获取local storage中存储的用户间的通讯消息
+    $scope.getUserMessageRecord = function(username){
         if(typeof(Storage) !== "undefined") {
             var messageFromRecord = [];
             if(localStorage.getItem("messageRecord") != null){
                 messageFromRecord = JSON.parse(localStorage.getItem("messageRecord"));
                 for(var i = 0; i < messageFromRecord.length; i++){
                     // 获取正在通讯的用户与当前登录用户间的消息
-                    if((usernameList.indexOf(messageFromRecord[i]["username"]) > -1 && messageFromRecord[i]["toUsername"] === chatWindowOwner)
-                        || (messageFromRecord[i]["username"] === chatWindowOwner && usernameList.indexOf(messageFromRecord[i]["toUsername"]) > -1)){
+                    var tempMessage = messageFromRecord[i];
+                    if(tempMessage["username"] === username && tempMessage["toUsername"] === $scope.myUser.name){
+                        tempMessage["user"] = false;
+                        tempMessage["other"] = true;
+                        $scope.messageList.push(messageFromRecord[i]);
+                    }else if(tempMessage["toUsername"] === username && tempMessage["username"] === $scope.myUser.name){
+                        tempMessage["user"] = true;
+                        tempMessage["other"] = false;
                         $scope.messageList.push(messageFromRecord[i]);
                     }
                 }
@@ -105,21 +107,30 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         }
     };
 
-    var params = [];
-    var nameList = [];
-
-    // 获取所有用户信息
-    homeService.getAllUsers(params, function(userList, myUser){
-        $scope.userList = userList;
-        $scope.myUser = myUser;
-        $scope.userChatTo = userList[0];
-        nameList.push($scope.userChatTo.name);
-        $scope.getMessageRecord(nameList, $scope.myUser.name);
-        console.log($scope.messageList);
-        //设置滚动条始终在最下方
-        var scrollWindow = document.getElementById("scroll-window");
-        scrollWindow.scrollTop = scrollWindow.scrollHeight;
-    });
+    // 获取local storage中存储的群组内的通讯消息
+    $scope.getGroupMessageRecord = function(usernameList){
+        if(typeof(Storage) !== "undefined") {
+            var messageFromRecord = [];
+            if(localStorage.getItem("messageRecord") != null){
+                messageFromRecord = JSON.parse(localStorage.getItem("messageRecord"));
+                for(var i = 0; i < messageFromRecord.length; i++){
+                    // 获取群组内的消息
+                    var tempMessage = messageFromRecord[i];
+                    if(usernameList.indexOf(tempMessage["username"]) > -1 && tempMessage["toUsername"] === "Group"){
+                        tempMessage["user"] = false;
+                        tempMessage["other"] = true;
+                        $scope.messageList.push(messageFromRecord[i]);
+                    }else if(tempMessage["username"] === $scope.myUser.name && tempMessage["toUsername"] === "Group"){
+                        tempMessage["user"] = true;
+                        tempMessage["other"] = false;
+                        $scope.messageList.push(messageFromRecord[i]);
+                    }
+                }
+            }
+        } else {
+            alert("抱歉，您的浏览器不支持local storage功能，无法保存聊天记录...");
+        }
+    };
 
     // 获取用户间的通讯窗口
     $scope.getUserChatWindow = function(user){
@@ -127,9 +138,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         $scope.isGroup = false;
         $scope.userChatTo = user;
         $scope.messageList = [];
-        nameList = [];
-        nameList.push(user.name);
-        $scope.getMessageRecord(nameList, $scope.myUser.name);              // 获取当前窗口的消息记录
+        $scope.getUserMessageRecord($scope.userChatTo.name);              // 获取当前窗口的消息记录
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
@@ -144,16 +153,41 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             "name": "Group"
         };
         $scope.messageList = [];
-        nameList = [];
+        var nameList = [];
         for(var i = 0; i < $scope.userList.length; i++){
             nameList.push($scope.userList[i].name);
         }
-        nameList.push($scope.myUser.name);
-        $scope.getMessageRecord(nameList, "Group");              // 获取当前窗口的消息记录
+        $scope.getGroupMessageRecord(nameList);              // 获取当前窗口的消息记录
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
     };
+
+    var params = [];
+
+    // 获取所有用户信息
+    homeService.getAllUsers(params, function(userList, myUser){
+        $scope.userList = userList;
+        $scope.myUser = myUser;
+        if(userList.length > 0){
+            $scope.userChatTo = userList[0];
+            $scope.getUserMessageRecord($scope.userChatTo.name);
+        }else{
+            $scope.userChatTo = {
+                "id": "group",
+                "name": "Group"
+            };
+            var nameList = [];
+            for(var i = 0; i < $scope.userList.length; i++){
+                nameList.push($scope.userList[i].name);
+            }
+            $scope.getGroupMessageRecord(nameList);
+        }
+        console.log($scope.messageList);
+        //设置滚动条始终在最下方
+        var scrollWindow = document.getElementById("scroll-window");
+        scrollWindow.scrollTop = scrollWindow.scrollHeight;
+    });
 
     // ------*-*------*-*------*-*------*-*------*-*------*-*------*-*------*-*------*-*------*-*------
     // websocket即时通讯功能的核心部分
@@ -171,42 +205,24 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     websocket.onmessage = function(event) {
         var message = JSON.parse(event.data);
         // console.log(message);
-        var messageCell = {};
+        var messageCell = {
+            "userId": message.userID,          // 发送消息的用户id
+            "username": message.username,      // 发送消息的用户名
+            "toUsername": message.toUsername,  // 接收消息的用户
+            "details": message.message,
+            "time": message.time
+        };
+        $scope.setMessageRecord(messageCell);  // 保存聊天记录在local storage中
         if(message.username === $scope.myUser.name){  // 是否是当前登录的用户
-            messageCell = {
-                "user": true,
-                "other": false,
-                "userId": message.userID,          // 发送消息的用户id
-                "username": message.username,      // 发送消息的用户名
-                "toUsername": message.toUsername,  // 接收消息的用户
-                "details": message.message,
-                "time": message.time
-            };
+            messageCell["user"] = true;
+            messageCell["other"] = false;
             $scope.messageList.push(messageCell);
         }else if((message.username === $scope.userChatTo.name && message.toUsername !== "Group")
             || (message.toUsername === "Group" && $scope.userChatTo.name === "Group")){  // 是否是当前正在通讯的用户，或正在群聊的用户
-            messageCell = {
-                "user": false,
-                "other": true,
-                "userId": message.userID,          // 发送消息的用户id
-                "username": message.username,      // 发送消息的用户名
-                "toUsername": message.toUsername,  // 接收消息的用户
-                "details": message.message,
-                "time": message.time
-            };
+            messageCell["user"] = false;
+            messageCell["other"] = true;
             $scope.messageList.push(messageCell);
-        }else{
-            messageCell = {
-                "user": false,
-                "other": true,
-                "userId": message.userID,          // 发送消息的用户id
-                "username": message.username,      // 发送消息的用户名
-                "toUsername": message.toUsername,  // 接收消息的用户
-                "details": message.message,
-                "time": message.time
-            };
         }
-        $scope.setMessageRecord(messageCell);  // 保存聊天记录在local storage中
         console.log($scope.messageList);
         $scope.$apply();  // 更新数据
         //设置滚动条始终在最下方
