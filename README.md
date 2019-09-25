@@ -16,6 +16,8 @@ springMVC+websocket 简单的即时通讯小Demo
    - 在local storage中添加时间限制
    - 优化local storage中的消息存储结构
    - 添加消息提示、未读消息功能
+- 2019-9-25:
+   - 添加图片传输功能，但暂时没有缓存到local storage中
 
 ### 准备
 运行前，请先向数据库中导入.sql文件，同时修改/src/main/resources/jdbc.properties文件中数据库的用户名和密码

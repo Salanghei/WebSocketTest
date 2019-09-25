@@ -3,17 +3,24 @@ package cn.edu.hit.ices.yang.websocket;
 import com.alibaba.fastjson.JSON;
 import net.sf.json.JSONObject;
 import org.springframework.web.socket.*;
+import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
  * 建立处理器来处理连接之后的事情，用来处理消息的接收和发送
  */
-public class MyWebSocketHandler implements WebSocketHandler {
+public class MyWebSocketHandler extends AbstractWebSocketHandler {
 
     private static final List<WebSocketSession> users = new ArrayList<>();
+
+    private FileOutputStream output;
 
     // 初次连接成功
     @Override
@@ -28,18 +35,18 @@ public class MyWebSocketHandler implements WebSocketHandler {
         }
     }
 
-    // 接受处理消息
+    // 接受处理文本消息
     @Override
-    public void handleMessage(WebSocketSession webSocketSession, WebSocketMessage<?> webSocketMessage)
-            throws Exception{
+    public void handleTextMessage(WebSocketSession webSocketSession, TextMessage webSocketMessage){
         // 解析json字符串
-        String messageStr = webSocketMessage.getPayload() + "";
+        String messageStr = webSocketMessage.getPayload();
         System.out.println(messageStr);
         if(messageStr.charAt(0) == '{' && messageStr.charAt(messageStr.length() - 1) == '}') {
             JSONObject jsonObject = JSONObject.fromObject(messageStr);
             String toUser = (String) jsonObject.get("to");
             String flag = (String) jsonObject.get("flag");
             String message = (String) jsonObject.get("message");
+            String isImg = (String) jsonObject.get("isImg");
             System.out.println("user = " + toUser + "; message = " + message);
 
             // 获取当前用户名
@@ -53,16 +60,35 @@ public class MyWebSocketHandler implements WebSocketHandler {
             Map<String, String> map = new HashMap<>();
             map.put("username", username);                         // 发消息的用户名
             map.put("userID", userid);                             // 发消息的用户id
-            map.put("message", message);                           // 消息内容
             map.put("time", dateFormat.format(date));              // 发消息的时间
-            map.put("toUsername", toUser);                     // 收消息的用户名
-            String jsonStr = JSON.toJSONString(map);
-            System.out.println("Send message to " + toUser);
-            if (flag.equals("0")) {
-                sendMessageToUsers(new TextMessage(jsonStr));
-            } else {
-                sendMessageToUser(username, toUser, new TextMessage(jsonStr));
+            map.put("toUsername", toUser);                         // 收消息的用户名
+
+            if(isImg.equals("false")) {
+                map.put("message", message);                           // 消息内容
+                String jsonStr = JSON.toJSONString(map);
+                System.out.println("Send message to " + toUser);
+                if (flag.equals("group")) {  // 群发
+                    sendMessageToUsers(new TextMessage(jsonStr));
+                } else if (flag.equals("user")) {  // 单发
+                    sendMessageToUser(username, toUser, new TextMessage(jsonStr));
+                }
+            }else{
+                map.put("message", dateFormat.format(date));           // 消息内容
+                String jsonStr = JSON.toJSONString(map);
+                System.out.println("Send picture to " + toUser);
+                handlePicture(username, toUser, flag, message, jsonStr);
             }
+        }
+    }
+
+    // 处理二进制消息
+    @Override
+    public void handleBinaryMessage(WebSocketSession session, BinaryMessage message){
+        ByteBuffer buffer= message.getPayload();
+        try {
+            output.write(buffer.array());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -84,11 +110,11 @@ public class MyWebSocketHandler implements WebSocketHandler {
 
     @Override
     public boolean supportsPartialMessages(){
-        return false;
+        return true;
     }
 
     /**
-     * 给所有在线用户发消息
+     * 给群组内用户发消息
      */
     public void sendMessageToUsers(TextMessage message){
         for(WebSocketSession user : users){
@@ -118,6 +144,76 @@ public class MyWebSocketHandler implements WebSocketHandler {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    /**
+     * 给所有在线用户发送图片
+     */
+    public void sendPictureToUsers(String fileName, String jsonStr){
+        for(WebSocketSession user : users){
+            if(user.isOpen()){
+                sendPicture(user, fileName, jsonStr);
+            }
+        }
+    }
+
+    /**
+     * 给某个用户发送图片
+     */
+    public void sendPictureToUser(String fromUser, String toUser, String fileName, String jsonStr){
+        for(WebSocketSession user : users){
+            // 发消息用户和接收消息用户都显示消息内容
+            if(user.getAttributes().get("WEBSOCKET_USERNAME").equals(toUser) ||
+                    user.getAttributes().get("WEBSOCKET_USERNAME").equals(fromUser)){
+                if(user.isOpen()){
+                    sendPicture(user, fileName, jsonStr);
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理图片消息
+     */
+    public void handlePicture(String fromUser, String toUser, String flag, String message, String jsonStr){
+        try{
+            if(message.endsWith(":pictureStart")){
+                File newPicture = new File("D:\\images\\" + message.split(":")[0]);
+                if(!newPicture.exists()){
+                    newPicture.createNewFile();
+                }
+                output = new FileOutputStream(newPicture);
+            }else if(message.endsWith(":pictureEnd")){
+                String fileName = message.split(":")[0];
+                output.close();
+                if(flag.equals("group")){  // 群发
+                    sendPictureToUsers(fileName, jsonStr);
+                }else if(flag.equals("user")){
+                    sendPictureToUser(fromUser, toUser, fileName, jsonStr);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 发送图片
+     */
+    public void sendPicture(WebSocketSession session,String fileName, String jsonStr){
+        FileInputStream input;
+        try {
+            File file = new File("D:\\images\\" + fileName);
+            input = new FileInputStream(file);
+            byte bytes[] = new byte[(int) file.length()];
+            input.read(bytes);
+            BinaryMessage byteMessage = new BinaryMessage(bytes);
+            session.sendMessage(new TextMessage(jsonStr));   // 先发送相关消息，包括时间、接收人等
+            session.sendMessage(byteMessage);                // 再发送图片
+            input.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
