@@ -24,15 +24,15 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
 
     // 初次连接成功
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+    public void afterConnectionEstablished(WebSocketSession session){
         System.out.println("================== 连接成功 ==================");
         users.add(session);
-        String userName = (String)session.getAttributes().get("WEBSOCKET_USERNAME");
-        if(userName != null){
-            // 查询未读消息
+//        String userName = (String)session.getAttributes().get("WEBSOCKET_USERNAME");
+//        if(userName != null){
+//            // 查询未读消息
 //            int count = 5;
 //            session.sendMessage(new TextMessage(String.valueOf(count)));
-        }
+//        }
     }
 
     // 接受处理文本消息
@@ -63,8 +63,9 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
             map.put("time", dateFormat.format(date));              // 发消息的时间
             map.put("toUsername", toUser);                         // 收消息的用户名
 
-            if(isImg.equals("false")) {
+            if(isImg.equals("false")) {  // 发送文字消息的处理方式
                 map.put("message", message);                           // 消息内容
+                map.put("isImage", "False");
                 String jsonStr = JSON.toJSONString(map);
                 System.out.println("Send message to " + toUser);
                 if (flag.equals("group")) {  // 群发
@@ -72,11 +73,9 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
                 } else if (flag.equals("user")) {  // 单发
                     sendMessageToUser(username, toUser, new TextMessage(jsonStr));
                 }
-            }else{
-                map.put("message", dateFormat.format(date));           // 消息内容
-                String jsonStr = JSON.toJSONString(map);
+            }else{  // 发送图片的处理方式
                 System.out.println("Send picture to " + toUser);
-                handlePicture(username, toUser, flag, message, jsonStr);
+                handlePicture(username, toUser, flag, message, map);
             }
         }
     }
@@ -102,7 +101,7 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus status) throws Exception {
+    public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus status){
         System.out.println("================== 连接关闭 ==================");
         System.out.println(status.toString());
         users.remove(webSocketSession);
@@ -114,9 +113,37 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
     }
 
     /**
+     * 处理图片消息
+     */
+    private void handlePicture(String fromUser, String toUser, String flag, String message, Map<String, String> map){
+        try{
+            if(message.endsWith(":pictureStart")){
+                File newPicture = new File("D:\\images\\" + message.split(":")[0]);
+                if(!newPicture.exists()){
+                    newPicture.createNewFile();
+                }
+                output = new FileOutputStream(newPicture);
+            }else if(message.endsWith(":pictureEnd")){
+                String fileName = message.split(":")[0];
+                output.close();
+                map.put("message", fileName);
+                map.put("isImage", "True");
+                String jsonStr = JSON.toJSONString(map);
+                if(flag.equals("group")){  // 群发
+                    sendPictureToUsers(fileName, jsonStr);
+                }else if(flag.equals("user")){
+                    sendPictureToUser(fromUser, toUser, fileName, jsonStr);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * 给群组内用户发消息
      */
-    public void sendMessageToUsers(TextMessage message){
+    private void sendMessageToUsers(TextMessage message){
         for(WebSocketSession user : users){
             try {
                 if(user.isOpen()){
@@ -131,7 +158,7 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
     /**
      * 给某个用户发送消息
      */
-    public void sendMessageToUser(String fromUser, String toUser, TextMessage message){
+    private void sendMessageToUser(String fromUser, String toUser, TextMessage message){
         for(WebSocketSession user : users){
             // 发消息用户和接收消息用户都显示消息内容
             if(user.getAttributes().get("WEBSOCKET_USERNAME").equals(toUser) ||
@@ -150,7 +177,7 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
     /**
      * 给所有在线用户发送图片
      */
-    public void sendPictureToUsers(String fileName, String jsonStr){
+    private void sendPictureToUsers(String fileName, String jsonStr){
         for(WebSocketSession user : users){
             if(user.isOpen()){
                 sendPicture(user, fileName, jsonStr);
@@ -161,7 +188,7 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
     /**
      * 给某个用户发送图片
      */
-    public void sendPictureToUser(String fromUser, String toUser, String fileName, String jsonStr){
+    private void sendPictureToUser(String fromUser, String toUser, String fileName, String jsonStr){
         for(WebSocketSession user : users){
             // 发消息用户和接收消息用户都显示消息内容
             if(user.getAttributes().get("WEBSOCKET_USERNAME").equals(toUser) ||
@@ -174,34 +201,9 @@ public class MyWebSocketHandler extends AbstractWebSocketHandler {
     }
 
     /**
-     * 处理图片消息
-     */
-    public void handlePicture(String fromUser, String toUser, String flag, String message, String jsonStr){
-        try{
-            if(message.endsWith(":pictureStart")){
-                File newPicture = new File("D:\\images\\" + message.split(":")[0]);
-                if(!newPicture.exists()){
-                    newPicture.createNewFile();
-                }
-                output = new FileOutputStream(newPicture);
-            }else if(message.endsWith(":pictureEnd")){
-                String fileName = message.split(":")[0];
-                output.close();
-                if(flag.equals("group")){  // 群发
-                    sendPictureToUsers(fileName, jsonStr);
-                }else if(flag.equals("user")){
-                    sendPictureToUser(fromUser, toUser, fileName, jsonStr);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * 发送图片
      */
-    public void sendPicture(WebSocketSession session,String fileName, String jsonStr){
+    private void sendPicture(WebSocketSession session,String fileName, String jsonStr){
         FileInputStream input;
         try {
             File file = new File("D:\\images\\" + fileName);

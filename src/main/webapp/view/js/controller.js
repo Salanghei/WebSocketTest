@@ -70,7 +70,6 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     $scope.myUser = {};           // 当前用户
     $scope.userChatTo = {};       // 正在对话的用户
 
-    $scope.isUser = true;        // 是否是用户间会话
     $scope.isGroup = false;      // 是否是群组会话
 
     var dateStr;                 // 记录当日日期
@@ -78,20 +77,20 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     var usernameList = [];       // 用户名列表
     var groupnameList = [];      // 群组名列表
 
-    // 在local storage中存储通讯消息
+    // 在local storage中存储文字消息
     $scope.setMessageRecord = function(data){
         if(typeof Storage !== undefined) {
             var key = $scope.userChatTo.name;
             if(groupnameList.indexOf(data["toUsername"]) > -1){    // 如果是群聊则键值变为群组名
                 key = data["toUsername"];
             }else if(data["username"] !== $scope.userChatTo.name && data["username"] !== $scope.myUser.name){
-                // 当前聊天窗口中的用户，与收到的消息来源用户不同时，也与当前登录用户不同时
+                // 当前聊天窗口中的用户，与收到的消息来源用户不同时，且与当前登录用户不同时
                 // 即既不是我发的消息，也不是对方发的消息，是其他人给我的消息
                 key = data["username"];
             }
             var messageToRecord = {};
             messageToRecord[key] = [];
-            if(localStorage.getItem("messageRecord" + dateStr) != null){
+            if(localStorage.getItem("messageRecord" + dateStr) != null){  // 获取已经保存的消息
                 messageToRecord = JSON.parse(localStorage.getItem("messageRecord" + dateStr));
                 if(messageToRecord[key] === undefined){
                     messageToRecord[key] = [];
@@ -104,7 +103,41 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         }
     };
 
-    // 获取local storage中存储的用户间的通讯消息
+    // 在local storage中存储图片消息
+    $scope.setPictureRecord = function(imgDom, data){
+        if(typeof Storage !== undefined){
+            var key = $scope.userChatTo.name;
+            if(groupnameList.indexOf(data["toUsername"]) > -1){    // 如果是群聊则键值变为群组名
+                key = data["toUsername"];
+            }else if(data["username"] !== $scope.userChatTo.name && data["username"] !== $scope.myUser.name){
+                // 当前聊天窗口中的用户，与收到的消息来源用户不同时，且与当前登录用户不同时
+                // 即既不是我发的消息，也不是对方发的消息，是其他人给我的消息
+                key = data["username"];
+            }
+            var imgToRecord = {};
+            imgToRecord[key] = {};
+            if(localStorage.getItem("pictureRecord" + dateStr) != null){  // 获取已经保存的图片信息
+                imgToRecord = JSON.parse(localStorage.getItem("pictureRecord" + dateStr));
+                if(imgToRecord[key] === undefined){
+                    imgToRecord[key] = {};
+                }
+            }
+            var imgCanvas = document.createElement("canvas");
+            var imgContext = imgCanvas.getContext("2d");
+            // 确保canvas的尺寸和图片一样大
+            imgCanvas.width = imgDom.width;
+            imgCanvas.height = imgDom.height;
+            // 在canvas中绘制图片
+            imgContext.drawImage(imgDom, 0, 0, imgDom.width, imgDom.height);
+            // 将图片保存为Data URL
+            imgToRecord[key][data["details"]] = imgCanvas.toDataURL("image/*");
+            localStorage.setItem("pictureRecord" + dateStr, JSON.stringify(imgToRecord));
+        } else {
+            alert("抱歉，您的浏览器不支持local storage功能，无法保存聊天记录...");
+        }
+    };
+
+    // 获取local storage中存储的用户间的文字消息
     $scope.getMessageRecord = function(chatUser){
         if(typeof Storage !== undefined) {
             if(localStorage.getItem("dateList") != null){
@@ -130,9 +163,49 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         }
     };
 
+    var pictureMap = {};
+    // 获取local storage中存储的用户间的图片消息
+    $scope.getPictureRecord = function(chatUser){
+        if(typeof Storage !== undefined){
+            if(localStorage.getItem("pictureRecord" + dateStr) != null){
+                var pictureDate = JSON.parse(localStorage.getItem("pictureRecord" + dateStr));
+                pictureMap = pictureDate[chatUser];
+                console.log("pictureMap");
+                console.log(pictureMap);
+
+                // var imgDom = document.getElementById(time);
+                // imgDom.setAttribute("src", pictureDate[message]);
+            }
+        } else {
+            alert("抱歉，您的浏览器不支持local storage功能，无法保存聊天记录...");
+        }
+    };
+
+    // 加载页面中的历史图片
+    $scope.loadPicture = function(){
+        console.log("load picture ...");
+        if(pictureMap !== undefined) {
+            for (var i = 0; i < $scope.messageList.length; i++) {
+                if ($scope.messageList[i]["isImage"] === true) {
+                    console.log("$scope.messageList[i]");
+                    console.log($scope.messageList[i]);
+                    var img = document.createElement("img");    // 显示图片
+                    img.src = pictureMap[$scope.messageList[i]["details"]];
+                    var insertBox = document.getElementById($scope.messageList[i]["time"]);
+                    insertBox.insertBefore(img, insertBox.childNodes[0]);
+                }
+            }
+        }
+    };
+
+    // dom元素渲染完成后执行的操作
+    $scope.ngRepeatFinished = function(){
+        console.log("dom渲染完成");
+        $scope.loadPicture();
+    };
+
     // 获取用户间的通讯窗口
     $scope.getUserChatWindow = function(user){
-        $scope.isUser = true;
         $scope.isGroup = false;
         $scope.userChatTo = user;
 
@@ -142,6 +215,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
 
         $scope.messageList = [];
         $scope.getMessageRecord($scope.userChatTo.name);              // 获取当前窗口的消息记录
+        $scope.getPictureRecord($scope.userChatTo.name);
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
@@ -149,7 +223,6 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
 
     // 获取群组的通讯窗口
     $scope.getGroupChatWindow = function(group){
-        $scope.isUser = false;
         $scope.isGroup = true;
         $scope.userChatTo = group;
 
@@ -159,6 +232,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
 
         $scope.messageList = [];
         $scope.getMessageRecord($scope.userChatTo.name);              // 获取当前窗口的消息记录
+        $scope.getPictureRecord($scope.userChatTo.name);
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
@@ -187,6 +261,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             if(dateList.length >= 7) {    // 只保存最近7天的记录
                 var tempDate = dateList.shift();         // 删除数组第一个元素，即时间最久远的元素
                 localStorage.removeItem("messageRecord" + tempDate);  // 存储的过期的消息要删除
+                localStorage.removeItem("pictureRecord" + tempDate);
             }
             dateList.push(dateStr);
         }
@@ -196,9 +271,11 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         if($scope.userList.length > 0){
             $scope.userChatTo = $scope.userList[0];
             $scope.getMessageRecord($scope.userChatTo.name);
+            $scope.getPictureRecord($scope.userChatTo.name);
         }else if($scope.groupList.length > 0){
             $scope.userChatTo = $scope.groupList[0];
             $scope.getMessageRecord($scope.userChatTo.name);
+            $scope.getPictureRecord($scope.userChatTo.name);
         }
 
         // 获取所有用户名的列表
@@ -213,6 +290,8 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
+
+        // $scope.loadPicture();
     });
 
 
@@ -226,82 +305,101 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     } else {
         websocket = new SockJS("http://localhost:8080/sockjs/socketServer.do");
     }
+
     websocket.onopen = function() {
         alert("链接服务器成功!")
     };
 
     var time;    // 记录当前收到图片的时间
     websocket.onmessage = function(event) {
+        pictureMap = undefined;
         if(typeof event.data === "string") {
-            var message = JSON.parse(event.data);
-            time = message.time;
-            var messageCell = {
-                "userId": message.userID,          // 发送消息的用户id
-                "username": message.username,      // 发送消息的用户名
-                "toUsername": message.toUsername,  // 接收消息的用户
-                "details": message.message,
-                "time": message.time,
-                "isTime": false,
-                "isImage": false,
-                "isText": true
-            };
-            if (message.username === $scope.myUser.name) {  // 是否是当前登录的用户
-                messageCell["user"] = true;
-                messageCell["other"] = false;
-                $scope.messageList.push(messageCell);
-            } else if ((message.username === $scope.userChatTo.name && groupnameList.indexOf(message.toUsername) < 0)
-                || (message.toUsername === $scope.userChatTo.name && groupnameList.indexOf(message.toUsername) > -1)) {
-                // 是否是当前正在通讯的用户，或正在群聊的用户
-                messageCell["user"] = false;
-                messageCell["other"] = true;
-                $scope.messageList.push(messageCell);
-            } else {      // 收到非当前聊天对象的消息时不显示
-                messageCell["user"] = false;
-                messageCell["other"] = true;
-                var index;
-                if (message.toUsername === $scope.myUser.name) {            // 判断是否是发给当前登录用户的（可能是群消息）
-                    index = usernameList.indexOf(message.username);        // 查找用户在$scope.userList中的索引
-                    $scope.userList[index]["unRead"] = true;               // 未读消息提示
-                    $scope.userList[index]["mesCount"] += 1;               // 未读消息条数
-                } else {                                                     // 发到群组的消息
-                    index = groupnameList.indexOf(message.toUsername);      // 查找群组在$scope.groupList中的索引
-                    $scope.groupList[index]["unRead"] = true;              // 未读消息提示
-                    $scope.groupList[index]["mesCount"] += 1;               // 未读消息条数
-                }
-            }
-            console.log($scope.messageList);
-            $scope.$apply();  // 更新数据
-            $scope.setMessageRecord(messageCell);  // 保存聊天记录在local storage中
-        }else{    // 显示图片信息
-            console.log(event.data);
-            var reader = new FileReader();
-            reader.onload = function(evt){
-                if(evt.target.readyState === FileReader.DONE){
-                    // 在对话中显示图片
-                    var messageCell = $scope.messageList.pop();
-                    if(messageCell["time"] === time) {
-                        messageCell["isImage"] = true;
-                        messageCell["isText"] = false;
-                        $scope.messageList.push(messageCell);
-                        $scope.$apply();  // 更新数据
-
-                        var img = document.createElement("img");    // 显示图片
-                        img.src = this.result;
-                        var insertBox = document.getElementById(time);
-                        insertBox.insertBefore(img, insertBox.childNodes[0]);
-                    }
-                }
-            };
-            reader.readAsDataURL(event.data);
+            $scope.receiveMessage(event);
+        }else{
+            $scope.receivePicture(event);
         }
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
     };
+
     websocket.onerror = function(event) {
     };
+
     websocket.onclose = function() {
         alert("与服务器断开了链接!");
+    };
+
+    var picHeadMessage = {};  // 记录图片的头信息
+
+    // 接收到文字
+    $scope.receiveMessage = function(evt){
+        var message = JSON.parse(evt.data);
+        time = message.time;
+        var messageCell = {
+            "userId": message.userID,          // 发送消息的用户id
+            "username": message.username,      // 发送消息的用户名
+            "toUsername": message.toUsername,  // 接收消息的用户
+            "details": message.message,
+            "time": message.time,
+            "isTime": false,
+            "isImage": message.isImage === "True",
+            "isText": message.isImage === "False"
+        };
+        if (message.username === $scope.myUser.name) {  // 是否是当前登录的用户
+            messageCell["user"] = true;
+            messageCell["other"] = false;
+            $scope.messageList.push(messageCell);
+        } else if ((message.username === $scope.userChatTo.name && groupnameList.indexOf(message.toUsername) < 0)
+            || (message.toUsername === $scope.userChatTo.name && groupnameList.indexOf(message.toUsername) > -1)) {
+            // 是否是当前正在通讯的用户，或正在群聊的用户
+            messageCell["user"] = false;
+            messageCell["other"] = true;
+            $scope.messageList.push(messageCell);
+        } else {      // 收到非当前聊天对象的消息时不显示
+            messageCell["user"] = false;
+            messageCell["other"] = true;
+            var index;
+            if (message.toUsername === $scope.myUser.name) {            // 判断是否是发给当前登录用户的（可能是群消息）
+                index = usernameList.indexOf(message.username);        // 查找用户在$scope.userList中的索引
+                $scope.userList[index]["unRead"] = true;               // 未读消息提示
+                $scope.userList[index]["mesCount"] += 1;               // 未读消息条数
+            } else {                                                     // 发到群组的消息
+                index = groupnameList.indexOf(message.toUsername);      // 查找群组在$scope.groupList中的索引
+                $scope.groupList[index]["unRead"] = true;              // 未读消息提示
+                $scope.groupList[index]["mesCount"] += 1;               // 未读消息条数
+            }
+        }
+        console.log($scope.messageList);
+        $scope.$apply();  // 更新数据
+        $scope.setMessageRecord(messageCell);  // 保存聊天记录在local storage中
+        if(message.isImage === "True"){
+            picHeadMessage = messageCell;
+        }
+    };
+
+    // 接收到图片
+    $scope.receivePicture = function(evt){
+        console.log(evt.data);
+        var reader = new FileReader();
+        reader.onload = function(event){
+            if(event.target.readyState === FileReader.DONE){
+                // 在对话中显示图片
+                var img = document.createElement("img");    // 显示图片
+                img.src = this.result;
+                var insertBox = document.getElementById(time);
+                if(insertBox) {
+                    insertBox.insertBefore(img, insertBox.childNodes[0]);
+                }else{
+                    document.body.appendChild(img);
+                    img.style.display = 'none';
+                }
+                img.onload = function(){
+                    $scope.setPictureRecord(img, picHeadMessage);
+                };
+            }
+        };
+        reader.readAsDataURL(evt.data);
     };
 
     // 群组内通讯
