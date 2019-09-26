@@ -18,6 +18,8 @@ springMVC+websocket 简单的即时通讯小Demo
    - 添加消息提示、未读消息功能
 - 2019-9-25:
    - 添加图片传输功能，但暂时没有缓存到local storage中
+- 2019-9-26:
+   - 添加图片缓存功能
 
 ### 准备
 运行前，请先向数据库中导入.sql文件，同时修改/src/main/resources/jdbc.properties文件中数据库的用户名和密码
@@ -35,7 +37,7 @@ springMVC+websocket 简单的即时通讯小Demo
 ![](https://raw.githubusercontent.com/Salanghei/WebSocketTest/master/images/login.jpg)
 
 #### 用户间通讯
-![](https://raw.githubusercontent.com/Salanghei/WebSocketTest/master/images/user1.jpg)
+![](https://raw.githubusercontent.com/Salanghei/WebSocketTest/master/images/user.jpg)
 
 #### 群组内通讯
 ![](https://raw.githubusercontent.com/Salanghei/WebSocketTest/master/images/group.jpg)
