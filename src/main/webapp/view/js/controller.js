@@ -194,7 +194,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
                         var img = document.createElement("img");    // 显示图片
                         img.src = pictureMap[$scope.messageList[i]["details"]];
                         var insertBox = document.getElementById($scope.messageList[i]["time"]);
-                        for(var j = 0; j < insertBox.childNodes.length; j++){
+                        for(var j = insertBox.childNodes.length - 1; j >= 0; j--){
                             if(insertBox.childNodes[j].nodeName === "IMG"){
                                 insertBox.removeChild(insertBox.childNodes[j]);
                             }
