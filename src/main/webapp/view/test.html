@@ -172,7 +172,7 @@
                     <div class="nano" style="height: 65vh; background-color: #d6dbe0;">
                         <div class="nano-content" style="height: 65vh;" id="scroll-window">
                             <div class="panel-body chat-body media-block" id="chat-window">
-                                <div ng-repeat="mes in messageList track by $index" on-finish-render-filters>
+                                <div ng-repeat="mes in messageList track by $index">
                                     <div class="chat-user" ng-if="mes.other">
                                         <div class="media-left">
                                             <img src="../img/profile-photos/{{ mes.userId }}.png" class="img-circle img-sm" alt="Profile Picture">

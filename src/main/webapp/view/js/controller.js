@@ -58,7 +58,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
             }
         });
     }
-}).controller("testCtrl", function($scope, $cookies, homeService){
+}).controller("testCtrl", function($scope, $cookies, $timeout, homeService){
     $scope.messageList = [];      // 当前消息列表
     $scope.messageToSend = "";    // 要发送的信息
 
@@ -138,7 +138,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
     };
 
     // 获取local storage中存储的用户间的文字消息
-    $scope.getMessageRecord = function(chatUser){
+    $scope.getMessageRecord = function(){
         if(typeof Storage !== undefined) {
             if(localStorage.getItem("dateList") != null){
                 var dateList = JSON.parse(localStorage.getItem("dateList"));  // 获取日期列表
@@ -146,14 +146,14 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
                     // 对于日期列表中的每个日期遍历
                     if(localStorage.getItem("messageRecord" + dateList[j]) != null){
                         var messageDate = JSON.parse(localStorage.getItem("messageRecord" + dateList[j]));
-                        if(messageDate[chatUser] !== undefined && messageDate[chatUser].length > 0) {
+                        if(messageDate[$scope.userChatTo.name] !== undefined && messageDate[$scope.userChatTo.name].length > 0) {
                             $scope.messageList.push({    // 对于有聊天记录的日期，将日期单独显示
                                 "user": false,
                                 "other": false,
                                 "isTime": true,
                                 "time": dateList[j]
                             });
-                            $scope.messageList = $scope.messageList.concat(messageDate[chatUser]);
+                            $scope.messageList = $scope.messageList.concat(messageDate[$scope.userChatTo.name]);
                         }
                     }
                 }
@@ -165,43 +165,45 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
 
     var pictureMap = {};
     // 获取local storage中存储的用户间的图片消息
-    $scope.getPictureRecord = function(chatUser){
+    $scope.getPictureRecord = function(){
         if(typeof Storage !== undefined){
-            if(localStorage.getItem("pictureRecord" + dateStr) != null){
-                var pictureDate = JSON.parse(localStorage.getItem("pictureRecord" + dateStr));
-                pictureMap = pictureDate[chatUser];
-                console.log("pictureMap");
-                console.log(pictureMap);
-
-                // var imgDom = document.getElementById(time);
-                // imgDom.setAttribute("src", pictureDate[message]);
+            pictureMap = {};
+            if(localStorage.getItem("dateList") != null) {
+                var dateList = JSON.parse(localStorage.getItem("dateList"));  // 获取日期列表
+                for (var j = 0; j < dateList.length; j++) {
+                    // 对于日期列表中的每个日期遍历
+                    if (localStorage.getItem("pictureRecord" + dateList[j]) != null) {
+                        var pictureDate = JSON.parse(localStorage.getItem("pictureRecord" + dateList[j]));
+                        pictureMap = Object.assign(pictureMap, pictureDate[$scope.userChatTo.name]);
+                    }
+                }
             }
         } else {
             alert("抱歉，您的浏览器不支持local storage功能，无法保存聊天记录...");
         }
     };
 
-    // 加载页面中的历史图片
-    $scope.loadPicture = function(){
-        console.log("load picture ...");
-        if(pictureMap !== undefined) {
-            for (var i = 0; i < $scope.messageList.length; i++) {
-                if ($scope.messageList[i]["isImage"] === true) {
-                    console.log("$scope.messageList[i]");
-                    console.log($scope.messageList[i]);
-                    var img = document.createElement("img");    // 显示图片
-                    img.src = pictureMap[$scope.messageList[i]["details"]];
-                    var insertBox = document.getElementById($scope.messageList[i]["time"]);
-                    insertBox.insertBefore(img, insertBox.childNodes[0]);
-                }
-            }
-        }
-    };
-
-    // dom元素渲染完成后执行的操作
+    // dom元素渲染完成后执行的操作：加载页面中的历史图片
     $scope.ngRepeatFinished = function(){
         console.log("dom渲染完成");
-        $scope.loadPicture();
+        if(pictureMap !== undefined) {
+            $timeout(function (){
+                console.log("load picture ...");
+                for (var i = 0; i < $scope.messageList.length; i++) {
+                    if ($scope.messageList[i]["isImage"] === true) {
+                        var img = document.createElement("img");    // 显示图片
+                        img.src = pictureMap[$scope.messageList[i]["details"]];
+                        var insertBox = document.getElementById($scope.messageList[i]["time"]);
+                        for(var j = 0; j < insertBox.childNodes.length; j++){
+                            if(insertBox.childNodes[j].nodeName === "IMG"){
+                                insertBox.removeChild(insertBox.childNodes[j]);
+                            }
+                        }
+                        insertBox.insertBefore(img, insertBox.childNodes[0]);
+                    }
+                }
+            });
+        }
     };
 
     // 获取用户间的通讯窗口
@@ -214,11 +216,13 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         $scope.userList[index]["mesCount"] = 0;                  // 未读消息条数
 
         $scope.messageList = [];
-        $scope.getMessageRecord($scope.userChatTo.name);              // 获取当前窗口的消息记录
-        $scope.getPictureRecord($scope.userChatTo.name);
+        $scope.getMessageRecord();              // 获取当前窗口的消息记录
+        $scope.getPictureRecord();
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
+
+        $scope.ngRepeatFinished();
     };
 
     // 获取群组的通讯窗口
@@ -231,11 +235,13 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         $scope.groupList[index]["mesCount"] = 0;                  // 未读消息条数
 
         $scope.messageList = [];
-        $scope.getMessageRecord($scope.userChatTo.name);              // 获取当前窗口的消息记录
-        $scope.getPictureRecord($scope.userChatTo.name);
+        $scope.getMessageRecord();              // 获取当前窗口的消息记录
+        $scope.getPictureRecord();
         //设置滚动条始终在最下方
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
+
+        $scope.ngRepeatFinished();
     };
 
     // 获取页面中所有信息
@@ -270,12 +276,12 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         // 获取已经存储在local storage中的消息记录
         if($scope.userList.length > 0){
             $scope.userChatTo = $scope.userList[0];
-            $scope.getMessageRecord($scope.userChatTo.name);
-            $scope.getPictureRecord($scope.userChatTo.name);
+            $scope.getMessageRecord();
+            $scope.getPictureRecord();
         }else if($scope.groupList.length > 0){
             $scope.userChatTo = $scope.groupList[0];
-            $scope.getMessageRecord($scope.userChatTo.name);
-            $scope.getPictureRecord($scope.userChatTo.name);
+            $scope.getMessageRecord();
+            $scope.getPictureRecord();
         }
 
         // 获取所有用户名的列表
@@ -291,7 +297,7 @@ app.controller("loginCtrl", function($scope, $cookies, homeService){
         var scrollWindow = document.getElementById("scroll-window");
         scrollWindow.scrollTop = scrollWindow.scrollHeight;
 
-        // $scope.loadPicture();
+        $scope.ngRepeatFinished();
     });
 
 
